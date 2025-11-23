@@ -1,0 +1,22 @@
+/* RESET BÁSICO Y MEJORADO */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: system-ui, Arial, sans-serif;
+  background-color: #f5f7fb; /* fondo clarito como la imagen */
+  color: #213547; /* texto gris oscuro */
+}
+
+/* Esto evita que todo esté centrado */
+#app {
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+
+

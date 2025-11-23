@@ -1,0 +1,24 @@
+{
+  "categories": [
+    {
+      "id": 1,
+      "name": "Vue.js"
+    },
+    {
+      "id": 2,
+      "name": "ASP.NET Core"
+    },
+    {
+      "id": 3,
+      "name": "Don Oscar"
+    },
+    {
+      "id": 4,
+      "name": "Ryan"
+    },
+    {
+      "id": 5,
+      "name": "don juan"
+    }
+  ]
+}

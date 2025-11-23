@@ -1,0 +1,14 @@
+﻿{
+  "authoring-phrase": {
+    "intro" : "Made with",
+    "use": "using",
+    "author" : "by {brand} Developer Team"
+  },
+  "option": {
+    "home": "Home",
+    "about": "About",
+    "dashboard": "Dashboard",
+    "analytics": "Analytics",
+    "reports": "Reports"
+  }
+}
