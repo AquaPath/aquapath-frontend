@@ -1,6 +1,6 @@
 <template>
   <div class="dashboard">
-    <!-- Navbar -->
+    <!-- Navbar
     <nav class="navbar">
       <div class="logo">💧 AquaOptimize Barranca</div>
       <ul class="nav-links">
@@ -9,7 +9,7 @@
         <li><a href="#" @click="$router.push('/reportes')">Reportes</a></li>
       </ul>
     </nav>
-
+    -->
     <div class="container">
       <!-- Hero Section -->
       <div class="hero">

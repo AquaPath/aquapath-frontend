@@ -11,6 +11,7 @@ export default {
     return {
       items: [
         {label: 'option.dashboard', to: '/dashboard'},
+        {label: 'option.visualization', to: '/red-visualization'},
         {label: 'option.analytics', to: '/analytics'},
         {label: 'option.reports', to: '/reports'},
 
@@ -28,7 +29,7 @@ export default {
       <template #start>
         <div class="flex items-center gap-2">
           <!--<img src="/logo.png" alt="logo" style="height: 24px" /> -->
-          <h3 class="font-bold text-white">Aqua Path</h3>
+          <h3 class="font-bold text-white"> 💧 Aqua Path</h3>
         </div>
       </template>
       <template #center>

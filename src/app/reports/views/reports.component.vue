@@ -1,6 +1,7 @@
 <template>
+
   <div class="reportes">
-    <!-- Navbar -->
+    <!-- Navbar
     <nav class="navbar">
       <div class="logo">💧 AquaOptimize Barranca</div>
       <ul class="nav-links">
@@ -9,7 +10,7 @@
         <li><a href="#" class="active">Reportes</a></li>
       </ul>
     </nav>
-
+    -->
     <div class="container">
       <!-- Header -->
       <div class="header-section">
