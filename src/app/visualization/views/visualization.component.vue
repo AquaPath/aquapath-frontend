@@ -59,23 +59,24 @@
           </div>
 
           <!-- Network Stats -->
+          <!-- Network Stats -->
           <div class="control-section">
             <label>Estadísticas de Red</label>
             <div class="stat-mini">
               <span class="stat-label">Nodos Totales</span>
-              <span class="stat-value">1,702</span>
+              <span class="stat-value">{{ stats.nodes.toLocaleString() }}</span>
             </div>
             <div class="stat-mini">
               <span class="stat-label">Aristas (Conexiones)</span>
-              <span class="stat-value">1,697</span>
+              <span class="stat-value">{{ stats.edges.toLocaleString() }}</span>
             </div>
             <div class="stat-mini">
               <span class="stat-label">Longitud Total</span>
-              <span class="stat-value">47.3 km</span>
+              <span class="stat-value">{{ stats.total_distance.toFixed(1) }} km</span>
             </div>
             <div class="stat-mini">
               <span class="stat-label">Costo Total</span>
-              <span class="stat-value">S/ 387,500</span>
+              <span class="stat-value">S/ {{ stats.total_cost.toLocaleString() }}</span>
             </div>
           </div>
 
@@ -85,7 +86,7 @@
             <div class="algo-details">
               <h4>Kruskal's MST</h4>
               <p>Complejidad: O(E log E)</p>
-              <p>Tiempo: 2.4 segundos</p>
+              <p>Tiempo: {{ stats.execution_time.toFixed(2) }} segundos</p>
               <p>Memoria: 42.3 MB</p>
             </div>
           </div>
@@ -225,6 +226,8 @@
 </template>
 
 <script>
+import httpInstance from '../../../../src/shared/services/http.instance.js'
+
 export default {
   name: 'red-visualizacion',
   data() {
@@ -235,6 +238,42 @@ export default {
         reservorios: true,
         comunidades: true,
         tuberias: true
+      },
+      // Datos reales del backend
+      stats: {
+        nodes: 1702,
+        edges: 1697,
+        total_distance: 47.3,
+        total_cost: 387500,
+        execution_time: 2.4
+      }
+    }
+  },
+  mounted() {
+    // Cargar datos al iniciar el componente
+    this.loadNetworkData()
+  },
+  methods: {
+    async loadNetworkData() {
+      try {
+        const response = await httpInstance.post('/api/optimize', {
+          algorithm: 'mst',
+          district: 'all',
+          serviceType: 'all'
+        })
+
+        // Actualizar stats con datos reales
+        if (response.data.success) {
+          this.stats = {
+            nodes: response.data.stats.communities_analyzed + response.data.stats.wells_used,
+            edges: response.data.stats.communities_connected,
+            total_distance: response.data.stats.total_distance,
+            total_cost: response.data.stats.total_cost,
+            execution_time: response.data.stats.execution_time
+          }
+        }
+      } catch (error) {
+        console.error('Error cargando datos:', error)
       }
     }
   }
