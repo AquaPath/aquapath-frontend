@@ -1,9 +1,10 @@
 ﻿import axios from 'axios';
-const httpInstance = axios.create(
-    {
-        baseURL: 'http://localhost:3000', //import.meta.env.VITE_API_URL,
-        heck: {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'}
+
+const httpInstance = axios.create({
+    baseURL: 'http://localhost:5000',
+    headers: {
+        'Content-Type': 'application/json'
     }
-);
+});
 
 export default httpInstance;
