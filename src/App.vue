@@ -24,7 +24,8 @@ export default {
 <template>
   <pv-toast/>
   <pv-confirm-dialog/>
-  <header>
+  <header v-if="$route.name !== 'login'">
+
     <pv-Toolbar class="bg-primary px-4 py-2 flex justify-between">
       <template #start>
         <div class="flex items-center gap-2">
