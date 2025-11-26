@@ -29,7 +29,7 @@ const router = createRouter(
 router.beforeEach((to, from, next) => {
     console.log(`Navigating from ${from.name} to ${to.name}`);
     // Set the page title
-    let baseTitle = 'ACME Learning Center';
+    let baseTitle = 'AquaPath';
     document.title = `${baseTitle} | ${to.meta['title']}`;
     next();
 });
