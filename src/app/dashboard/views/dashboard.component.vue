@@ -1,15 +1,5 @@
 <template>
   <div class="dashboard">
-    <!-- Navbar
-    <nav class="navbar">
-      <div class="logo">💧 AquaOptimize Barranca</div>
-      <ul class="nav-links">
-        <li><a href="#" @click="$router.push('/')">Dashboard</a></li>
-        <li><a href="#" @click="$router.push('/analisis')">Análisis</a></li>
-        <li><a href="#" @click="$router.push('/reportes')">Reportes</a></li>
-      </ul>
-    </nav>
-    -->
     <div class="container">
       <!-- Hero Section -->
       <div class="hero">
@@ -25,7 +15,7 @@
 
           <div class="form-group">
             <label>Algoritmo de Optimización</label>
-            <select v-model="algorithm">
+            <select v-model="params.algorithm">
               <option value="mst">MST (Kruskal/Prim)</option>
               <option value="dijkstra">Dijkstra + MST</option>
               <option value="dp">Programación Dinámica</option>
@@ -35,7 +25,7 @@
 
           <div class="form-group">
             <label>Distrito</label>
-            <select v-model="district">
+            <select v-model="params.district">
               <option value="all">Todos los distritos</option>
               <option value="barranca">Barranca</option>
               <option value="paramonga">Paramonga</option>
@@ -46,7 +36,7 @@
 
           <div class="form-group">
             <label>Tipo de Servicio</label>
-            <select v-model="serviceType">
+            <select v-model="params.serviceType">
               <option value="all">Todos</option>
               <option value="emergency">Emergencia (70-80%)</option>
               <option value="normal">Normal</option>
@@ -55,16 +45,23 @@
 
           <div class="form-group">
             <label>Número de Pozos a Ubicar</label>
-            <input type="number" v-model="wellCount" min="1" max="20" />
+            <input type="number" v-model.number="params.wellCount" min="1" max="20" />
           </div>
 
           <div class="form-group">
             <label>Presupuesto Máximo (S/)</label>
-            <input type="number" v-model="budget" step="10000" />
+            <input type="number" v-model.number="params.budget" step="10000" />
           </div>
 
-          <button class="btn-primary" @click="runOptimization" :disabled="isOptimizing">
-            {{ isOptimizing ? 'Procesando...' : 'Ejecutar Optimización' }}
+          <button
+              class="btn-primary"
+              @click="runOptimization"
+              :disabled="isOptimizing"
+          >
+            <span v-if="isOptimizing">
+              <i class="pi pi-spin pi-spinner"></i> Procesando...
+            </span>
+            <span v-else>Ejecutar Optimización</span>
           </button>
         </aside>
 
@@ -74,22 +71,22 @@
           <div class="stats-grid">
             <div class="stat-card">
               <h4>Comunidades Analizadas</h4>
-              <div class="value">1,697</div>
+              <div class="value">{{ stats.communities_analyzed?.toLocaleString() || '0' }}</div>
               <div class="unit">registros</div>
             </div>
             <div class="stat-card">
               <h4>Costo Estimado</h4>
-              <div class="value">S/ 387,500</div>
+              <div class="value">S/ {{ formatNumber(stats.total_cost) }}</div>
               <div class="unit">instalación</div>
             </div>
             <div class="stat-card">
               <h4>Cobertura Proyectada</h4>
-              <div class="value">94.2%</div>
+              <div class="value">{{ stats.coverage_percentage?.toFixed(1) || '0' }}%</div>
               <div class="unit">población</div>
             </div>
             <div class="stat-card">
               <h4>Viviendas Beneficiadas</h4>
-              <div class="value">12,453</div>
+              <div class="value">{{ stats.households?.toLocaleString() || '0' }}</div>
               <div class="unit">hogares</div>
             </div>
           </div>
@@ -100,9 +97,24 @@
             <div class="map-container">
               <h3>Mapa de Optimización - Barranca</h3>
               <div class="map-placeholder">
-                <div class="map-content">
+                <div class="map-content" v-if="!optimizationResult">
                   <span class="map-icon">📍</span>
-                  <p>Visualización Geoespacial de Red Hídrica</p>
+                  <p>Ejecuta una optimización para ver el mapa</p>
+                </div>
+                <div v-else class="map-content success-state">
+                  <span class="map-icon">✅</span>
+                  <p><strong>Red optimizada generada</strong></p>
+                  <p style="font-size: 14px; margin-top: 10px;">
+                    <strong>{{ optimizationResult.stats.nodes }}</strong> nodos,
+                    <strong>{{ optimizationResult.stats.edges }}</strong> aristas
+                  </p>
+                  <button
+                      class="btn-view-graph"
+                      @click="viewGraph"
+                      style="margin-top: 15px;"
+                  >
+                    Ver Grafo Completo
+                  </button>
                 </div>
                 <div class="legend">
                   <h4>Leyenda</h4>
@@ -131,43 +143,90 @@
               <h3>Resultados de Optimización</h3>
 
               <div class="tabs">
-                <button class="tab-btn active">MST (Kruskal)</button>
-                <button class="tab-btn">Dijkstra</button>
-                <button class="tab-btn">Prog. Dinámica</button>
+                <button
+                    class="tab-btn"
+                    :class="{ active: params.algorithm === 'mst' }"
+                    @click="params.algorithm = 'mst'"
+                >
+                  MST (Kruskal)
+                </button>
+                <button
+                    class="tab-btn"
+                    :class="{ active: params.algorithm === 'dijkstra' }"
+                    @click="params.algorithm = 'dijkstra'"
+                >
+                  Dijkstra
+                </button>
+                <button
+                    class="tab-btn"
+                    :class="{ active: params.algorithm === 'dp' }"
+                    @click="params.algorithm = 'dp'"
+                >
+                  Prog. Dinámica
+                </button>
               </div>
 
-              <div class="result-item">
-                <span class="result-label">Costo Total de Instalación</span>
-                <span class="result-value">
-                  S/ 387,500
-                  <span class="badge badge-success">-22%</span>
-                </span>
+              <div v-if="optimizationResult" class="results-content">
+                <div class="result-item">
+                  <span class="result-label">Algoritmo Ejecutado</span>
+                  <span class="result-value">
+                    <strong>{{ optimizationResult.algorithm }}</strong>
+                  </span>
+                </div>
+
+                <div class="result-item">
+                  <span class="result-label">Costo Total de Instalación</span>
+                  <span class="result-value">
+                    S/ {{ formatNumber(optimizationResult.stats.total_cost) }}
+                    <span class="badge badge-success">-{{ optimizationResult.stats.efficiency.toFixed(1) }}%</span>
+                  </span>
+                </div>
+
+                <div class="result-item">
+                  <span class="result-label">Longitud de Red Óptima</span>
+                  <span class="result-value">{{ optimizationResult.stats.total_distance.toFixed(2) }} km</span>
+                </div>
+
+                <div class="result-item">
+                  <span class="result-label">Tiempo de Ejecución</span>
+                  <span class="result-value">{{ optimizationResult.stats.execution_time.toFixed(4) }} seg</span>
+                </div>
+
+                <div class="result-item">
+                  <span class="result-label">Pozos Utilizados</span>
+                  <span class="result-value">
+                    {{ optimizationResult.stats.wells_used }}
+                    <span class="badge badge-info">de {{ params.wellCount }}</span>
+                  </span>
+                </div>
+
+                <div class="result-item">
+                  <span class="result-label">Comunidades Conectadas</span>
+                  <span class="result-value">
+                    {{ optimizationResult.stats.communities_connected }}
+                    <span class="badge badge-success">
+                      {{ optimizationResult.stats.coverage_percentage.toFixed(1) }}%
+                    </span>
+                  </span>
+                </div>
+
+                <div class="result-item">
+                  <span class="result-label">Complejidad Algorítmica</span>
+                  <span class="result-value">
+                    {{ optimizationResult.stats.complexity }}
+                  </span>
+                </div>
+
+                <div class="result-item">
+                  <span class="result-label">Costo Promedio por km</span>
+                  <span class="result-value">
+                    S/ {{ formatNumber(optimizationResult.stats.avg_cost_per_km) }}
+                  </span>
+                </div>
               </div>
 
-              <div class="result-item">
-                <span class="result-label">Longitud de Red Óptima</span>
-                <span class="result-value">47.3 km</span>
-              </div>
-
-              <div class="result-item">
-                <span class="result-label">Tiempo de Ejecución</span>
-                <span class="result-value">2.4 seg</span>
-              </div>
-
-              <div class="result-item">
-                <span class="result-label">Eficiencia vs. Tradicional</span>
-                <span class="result-value">
-                  +34%
-                  <span class="badge badge-success">Óptimo</span>
-                </span>
-              </div>
-
-              <div class="result-item">
-                <span class="result-label">Índice de Sostenibilidad</span>
-                <span class="result-value">
-                  8.7/10
-                  <span class="badge badge-warning">Bueno</span>
-                </span>
+              <div v-else class="no-results">
+                <p>No hay resultados aún. Ejecuta una optimización para ver los resultados.</p>
               </div>
             </div>
           </div>
@@ -178,26 +237,143 @@
 </template>
 
 <script>
+import http from '../../../shared/services/http.instance.js';
+
 export default {
   name: 'dashboard',
-  title: "Dashboard",
+
   data() {
     return {
-      algorithm: 'mst',
-      district: 'all',
-      serviceType: 'all',
-      wellCount: 5,
-      budget: 500000,
-      isOptimizing: false
+      params: {
+        algorithm: 'mst',
+        district: 'all',
+        serviceType: 'all',
+        wellCount: 5,
+        budget: 500000
+      },
+      stats: {
+        communities_analyzed: 0,
+        total_cost: 0,
+        coverage_percentage: 0,
+        households: 0
+      },
+      isOptimizing: false,
+      optimizationResult: null
     }
   },
+
+  mounted() {
+    this.loadGeneralStats();
+  },
+
   methods: {
-    runOptimization() {
-      this.isOptimizing = true
-      setTimeout(() => {
-        this.isOptimizing = false
-        alert('Optimización completada!\n\nAlgoritmo: ' + this.algorithm.toUpperCase() + '\nComunidades procesadas: 1,697\nCosto optimizado: S/ 387,500')
-      }, 2000)
+    /**
+     * Cargar estadísticas generales del sistema
+     */
+    async loadGeneralStats() {
+      try {
+        const response = await http.get('/api/stats');
+
+        if (response.data.success) {
+          this.stats = {
+            communities_analyzed: response.data.stats.communities_analyzed,
+            total_cost: response.data.stats.estimated_cost,
+            coverage_percentage: response.data.stats.coverage_percentage,
+            households: response.data.stats.total_households
+          };
+        }
+      } catch (error) {
+        console.error('Error loading stats:', error);
+        this.$toast.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudieron cargar las estadísticas generales',
+          life: 3000
+        });
+      }
+    },
+
+    /**
+     * Ejecutar optimización con el backend
+     */
+    async runOptimization() {
+      this.isOptimizing = true;
+
+      try {
+        // CORRECCIÓN: Usar this.params en lugar de variables sueltas
+        const payload = {
+          algorithm: this.params.algorithm,
+          district: this.params.district,
+          serviceType: this.params.serviceType,
+          wellCount: this.params.wellCount,
+          budget: this.params.budget || null
+        };
+
+        console.log('📤 Enviando optimización:', payload);
+
+        const response = await http.post('/api/optimize', payload);
+
+        if (response.data.success) {
+          // Guardar resultado completo
+          this.optimizationResult = response.data;
+
+          // Actualizar estadísticas principales
+          this.stats = {
+            communities_analyzed: response.data.stats.communities_analyzed,
+            total_cost: response.data.stats.total_cost,
+            coverage_percentage: response.data.stats.coverage_percentage,
+            households: response.data.stats.households
+          };
+
+          // Guardar en localStorage para visualización
+          localStorage.setItem('lastOptimization', JSON.stringify(response.data));
+
+          console.log('✅ Optimización exitosa:', response.data);
+
+          this.$toast.add({
+            severity: 'success',
+            summary: 'Optimización Exitosa',
+            detail: `${response.data.algorithm} - Costo: S/ ${this.formatNumber(response.data.stats.total_cost)}`,
+            life: 5000
+          });
+        }
+      } catch (error) {
+        console.error('❌ Error running optimization:', error);
+
+        this.$toast.add({
+          severity: 'error',
+          summary: 'Error en Optimización',
+          detail: error.response?.data?.detail || error.message || 'Error ejecutando optimización',
+          life: 5000
+        });
+      } finally {
+        this.isOptimizing = false;
+      }
+    },
+
+    /**
+     * Navegar a visualización de grafo
+     */
+    viewGraph() {
+      if (this.optimizationResult) {
+        this.$router.push({
+          name: 'red-visualization',
+          params: {
+            optimizationId: this.optimizationResult.optimization_id
+          }
+        });
+      }
+    },
+
+    /**
+     * Formatear números grandes
+     */
+    formatNumber(num) {
+      if (!num) return '0';
+      return num.toLocaleString('es-PE', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
     }
   }
 }
@@ -215,46 +391,12 @@ export default {
   background: #F0F4F8;
 }
 
-/* Navbar */
-.navbar {
-  background: linear-gradient(90deg, #1E3C72 0%, #2A5298 100%);
-  color: white;
-  padding: 20px 60px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.logo {
-  font-size: 20px;
-  font-weight: bold;
-}
-
-.nav-links {
-  display: flex;
-  gap: 50px;
-  list-style: none;
-}
-
-.nav-links a {
-  color: white;
-  text-decoration: none;
-  font-size: 14px;
-  transition: opacity 0.3s;
-}
-
-.nav-links a:hover {
-  opacity: 0.8;
-}
-
-/* Container */
 .container {
   padding: 30px 60px;
   max-width: 1440px;
   margin: 0 auto;
 }
 
-/* Hero */
 .hero {
   background: white;
   border-radius: 12px;
@@ -275,14 +417,12 @@ export default {
   line-height: 1.6;
 }
 
-/* Main Grid */
 .main-grid {
   display: grid;
   grid-template-columns: 300px 1fr;
   gap: 30px;
 }
 
-/* Sidebar */
 .sidebar {
   background: white;
   border-radius: 12px;
@@ -348,14 +488,21 @@ export default {
   cursor: not-allowed;
 }
 
-/* Content Area */
+.pi-spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
 .content-area {
   display: flex;
   flex-direction: column;
   gap: 30px;
 }
 
-/* Stats Grid */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -375,6 +522,7 @@ export default {
   color: #666;
   margin-bottom: 10px;
   font-weight: 500;
+  text-transform: uppercase;
 }
 
 .stat-card .value {
@@ -389,14 +537,12 @@ export default {
   color: #999;
 }
 
-/* Bottom Grid */
 .bottom-grid {
   display: grid;
   grid-template-columns: 1.8fr 1fr;
   gap: 30px;
 }
 
-/* Map Container */
 .map-container {
   background: white;
   border-radius: 12px;
@@ -427,6 +573,12 @@ export default {
   z-index: 1;
 }
 
+.map-content.success-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
 .map-icon {
   font-size: 60px;
   display: block;
@@ -435,6 +587,23 @@ export default {
 
 .map-content p {
   font-size: 16px;
+}
+
+.btn-view-graph {
+  padding: 10px 20px;
+  background: rgba(255, 255, 255, 0.2);
+  border: 2px solid white;
+  color: white;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.btn-view-graph:hover {
+  background: white;
+  color: #764BA2;
 }
 
 .legend {
@@ -469,7 +638,6 @@ export default {
   border-radius: 3px;
 }
 
-/* Results Section */
 .results-section {
   background: white;
   border-radius: 12px;
@@ -508,6 +676,11 @@ export default {
   font-weight: 600;
 }
 
+.results-content {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
 .result-item {
   background: #F8F9FA;
   padding: 12px 15px;
@@ -521,6 +694,7 @@ export default {
 .result-label {
   font-size: 12px;
   color: #333;
+  font-weight: 500;
 }
 
 .result-value {
@@ -545,9 +719,21 @@ export default {
   color: #155724;
 }
 
+.badge-info {
+  background: #E3F2FD;
+  color: #1976D2;
+}
+
 .badge-warning {
   background: #FFF3CD;
   color: #856404;
+}
+
+.no-results {
+  text-align: center;
+  padding: 40px 20px;
+  color: #999;
+  font-size: 14px;
 }
 
 @media (max-width: 1024px) {
