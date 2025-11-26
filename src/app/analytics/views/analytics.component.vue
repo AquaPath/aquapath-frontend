@@ -1,173 +1,169 @@
 <template>
-  <div class="analisis">
-    <!-- Navbar
-    <nav class="navbar">
-      <div class="logo">💧 AquaOptimize Barranca</div>
-      <ul class="nav-links">
-        <li><a href="#" @click="$router.push('/')">Dashboard</a></li>
-        <li><a href="#" class="active">Análisis</a></li>
-        <li><a href="#" @click="$router.push('/reportes')">Reportes</a></li>
-      </ul>
-    </nav>
-    -->
+  <div class="analytics-container">
+    <div class="analytics-header">
+      <h1>📊 Análisis y Comparación de Algoritmos</h1>
+      <p>Evaluación del rendimiento de los algoritmos de optimización implementados</p>
+    </div>
 
-    <div class="container">
-      <!-- Title Section -->
-      <div class="title-section">
-        <h1>Análisis de Algoritmos de Optimización</h1>
-        <p>Comparativa de rendimiento y eficiencia entre diferentes métodos algorítmicos</p>
+    <div class="analytics-content">
+      <!-- Comparación de Algoritmos -->
+      <div class="comparison-section">
+        <h2>Comparación de Algoritmos</h2>
+
+        <div v-if="loading" class="loading-state">
+          <i class="pi pi-spin pi-spinner" style="font-size: 36px;"></i>
+          <p>Cargando datos de comparación...</p>
+        </div>
+
+        <div v-else-if="comparisonData.length === 0" class="empty-state">
+          <p>No hay datos de comparación disponibles.</p>
+          <p>Ejecuta algunas optimizaciones primero en el Dashboard.</p>
+        </div>
+
+        <div v-else class="comparison-grid">
+          <div
+              v-for="algo in comparisonData"
+              :key="algo.algoritmo"
+              class="algo-card"
+          >
+            <div class="algo-header">
+              <h3>{{ algo.algoritmo }}</h3>
+              <span class="algo-badge">{{ algo.ejecuciones }} ejecuciones</span>
+            </div>
+
+            <div class="algo-metrics">
+              <div class="metric-item">
+                <span class="metric-label">Costo Promedio</span>
+                <span class="metric-value success">
+                  S/ {{ formatNumber(algo.costo_promedio) }}
+                </span>
+              </div>
+
+              <div class="metric-item">
+                <span class="metric-label">Tiempo Promedio</span>
+                <span class="metric-value">
+                  {{ Number(algo.tiempo_promedio).toFixed(4) }} seg
+                </span>
+              </div>
+
+              <div class="metric-item">
+                <span class="metric-label">Eficiencia Promedio</span>
+                <span class="metric-value info">
+                  {{ Number(algo.eficiencia_promedio).toFixed(1) }}%
+                </span>
+              </div>
+
+              <div class="metric-item">
+                <span class="metric-label">Mejor Costo</span>
+                <span class="metric-value success">
+                  S/ {{ formatNumber(algo.mejor_costo) }}
+                </span>
+              </div>
+
+              <div class="metric-item">
+                <span class="metric-label">Peor Costo</span>
+                <span class="metric-value warning">
+                  S/ {{ formatNumber(algo.peor_costo) }}
+                </span>
+              </div>
+            </div>
+
+            <div class="algo-rank">
+              <span v-if="algo.ranking === 1" class="rank-badge gold">
+                🥇 Más Eficiente
+              </span>
+              <span v-else-if="algo.ranking === 2" class="rank-badge silver">
+                🥈 Segundo Lugar
+              </span>
+              <span v-else class="rank-badge bronze">
+                🥉 Tercer Lugar
+              </span>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <!-- Comparison Table -->
-      <div class="comparison-section">
-        <h2>Comparativa de Algoritmos</h2>
+      <!-- Historial de Optimizaciones -->
+      <div class="history-section">
+        <div class="section-header">
+          <h2>Historial de Optimizaciones</h2>
+          <button class="btn-refresh" @click="loadData">
+            🔄 Actualizar
+          </button>
+        </div>
 
-        <div class="table-container">
-          <table class="comparison-table">
+        <div v-if="history.length === 0" class="empty-state">
+          <p>No hay historial de optimizaciones.</p>
+        </div>
+
+        <div v-else class="history-table">
+          <table>
             <thead>
             <tr>
+              <th>Fecha</th>
               <th>Algoritmo</th>
-              <th>Costo (S/)</th>
-              <th>Tiempo (seg)</th>
-              <th>Cobertura (%)</th>
-              <th>Complejidad</th>
-              <th>Estado</th>
+              <th>Distrito</th>
+              <th>Costo Total</th>
+              <th>Distancia</th>
+              <th>Tiempo</th>
+              <th>Eficiencia</th>
+              <th>Comunidades</th>
             </tr>
             </thead>
             <tbody>
-            <tr>
+            <tr
+                v-for="opt in history"
+                :key="opt.id"
+                @click="viewDetails(opt.id)"
+                class="history-row"
+            >
+              <td>{{ formatDate(opt.fecha) }}</td>
               <td>
-                <div class="algo-name">MST (Kruskal)</div>
-                <div class="algo-desc">Árbol Expansión Mínima</div>
+                <span class="algo-tag">{{ opt.algoritmo }}</span>
               </td>
-              <td class="cost">387,500</td>
-              <td>2.4</td>
-              <td>94.2</td>
-              <td><code>O(E log E)</code></td>
-              <td><span class="badge badge-success">Óptimo</span></td>
-            </tr>
-            <tr>
+              <td>{{ opt.distrito || 'Todos' }}</td>
+              <td class="cost-cell">S/ {{ formatNumber(opt.costo_total) }}</td>
+              <td>{{ Number(opt.distancia_total).toFixed(2) }} km</td>
+              <td>{{ Number(opt.tiempo_ejecucion).toFixed(4) }} s</td>
               <td>
-                <div class="algo-name">MST (Prim)</div>
-                <div class="algo-desc">Árbol Expansión Mínima</div>
+                  <span class="efficiency-badge">
+                    {{ Number(opt.eficiencia).toFixed(1) }}%
+                  </span>
               </td>
-              <td class="cost">387,500</td>
-              <td>3.1</td>
-              <td>94.2</td>
-              <td><code>O(E log V)</code></td>
-              <td><span class="badge badge-success">Óptimo</span></td>
-            </tr>
-            <tr>
-              <td>
-                <div class="algo-name">Dijkstra + MST</div>
-                <div class="algo-desc">Rutas cortas + Expansión</div>
-              </td>
-              <td class="cost">395,200</td>
-              <td>4.7</td>
-              <td>96.1</td>
-              <td><code>O(V² log V)</code></td>
-              <td><span class="badge badge-warning">Bueno</span></td>
-            </tr>
-            <tr>
-              <td>
-                <div class="algo-name">Prog. Dinámica</div>
-                <div class="algo-desc">Ubicación óptima K pozos</div>
-              </td>
-              <td class="cost">389,800</td>
-              <td>8.3</td>
-              <td>95.4</td>
-              <td><code>O(K·N²)</code></td>
-              <td><span class="badge badge-warning">Bueno</span></td>
-            </tr>
-            <tr>
-              <td>
-                <div class="algo-name">Backtracking</div>
-                <div class="algo-desc">Exploración exhaustiva</div>
-              </td>
-              <td class="cost">385,100</td>
-              <td>45.2</td>
-              <td>97.8</td>
-              <td><code>O(2^N)</code></td>
-              <td><span class="badge badge-error">Lento</span></td>
+              <td>{{ opt.comunidades_conectadas }}</td>
             </tr>
             </tbody>
           </table>
         </div>
-
-        <div class="note">
-          <span class="note-icon">ℹ️</span>
-          <span>Recomendación: MST (Kruskal) ofrece el mejor balance entre costo, tiempo y cobertura para este dataset.</span>
-        </div>
       </div>
 
-      <!-- Charts Section -->
-      <div class="charts-grid">
-        <!-- Performance Chart -->
-        <div class="chart-card">
-          <h3>Gráfico de Rendimiento</h3>
-          <div class="bar-chart">
-            <div class="bar-item">
-              <div class="bar" style="height: 85%; background: #4CAF50;"></div>
-              <span class="bar-label">MST-K</span>
-            </div>
-            <div class="bar-item">
-              <div class="bar" style="height: 80%; background: #4CAF50;"></div>
-              <span class="bar-label">MST-P</span>
-            </div>
-            <div class="bar-item">
-              <div class="bar" style="height: 70%; background: #FF9800;"></div>
-              <span class="bar-label">Dijkstra</span>
-            </div>
-            <div class="bar-item">
-              <div class="bar" style="height: 72%; background: #FF9800;"></div>
-              <span class="bar-label">Prog.Din</span>
-            </div>
-            <div class="bar-item">
-              <div class="bar" style="height: 40%; background: #F44336;"></div>
-              <span class="bar-label">Backtr.</span>
-            </div>
-          </div>
-          <p class="chart-note">Puntuación de eficiencia (0-100)</p>
+      <!-- Estadísticas por Distrito -->
+      <div class="districts-section">
+        <h2>Estadísticas por Distrito</h2>
+
+        <div v-if="districtStats.length === 0" class="empty-state">
+          <p>No hay estadísticas por distrito disponibles.</p>
         </div>
 
-        <!-- Cost Analysis -->
-        <div class="chart-card">
-          <h3>Análisis de Costos por Distrito</h3>
-          <div class="cost-analysis">
-            <div class="cost-item">
-              <div class="cost-header">
-                <span class="district-name">Barranca</span>
-                <span class="cost-value">S/ 156,200</span>
+        <div v-else class="districts-grid">
+          <div
+              v-for="district in districtStats"
+              :key="district.distrito"
+              class="district-card"
+          >
+            <h3>{{ district.distrito }}</h3>
+            <div class="district-metrics">
+              <div class="district-metric">
+                <span class="label">Comunidades</span>
+                <span class="value">{{ district.comunidades }}</span>
               </div>
-              <div class="progress-bar">
-                <div class="progress" style="width: 85%; background: #4CAF50;"></div>
+              <div class="district-metric">
+                <span class="label">Demanda Total</span>
+                <span class="value">{{ Number(district.demanda_total).toFixed(0) }} m³</span>
               </div>
-            </div>
-            <div class="cost-item">
-              <div class="cost-header">
-                <span class="district-name">Paramonga</span>
-                <span class="cost-value">S/ 98,300</span>
-              </div>
-              <div class="progress-bar">
-                <div class="progress" style="width: 64%; background: #2196F3;"></div>
-              </div>
-            </div>
-            <div class="cost-item">
-              <div class="cost-header">
-                <span class="district-name">Pativilca</span>
-                <span class="cost-value">S/ 87,500</span>
-              </div>
-              <div class="progress-bar">
-                <div class="progress" style="width: 57%; background: #FF9800;"></div>
-              </div>
-            </div>
-            <div class="cost-item">
-              <div class="cost-header">
-                <span class="district-name">Supe</span>
-                <span class="cost-value">S/ 45,500</span>
-              </div>
-              <div class="progress-bar">
-                <div class="progress" style="width: 30%; background: #9C27B0;"></div>
+              <div class="district-metric">
+                <span class="label">Viviendas</span>
+                <span class="value">{{ district.viviendas_total }}</span>
               </div>
             </div>
           </div>
@@ -178,69 +174,152 @@
 </template>
 
 <script>
+import http from '../../../shared/services/http.instance.js';
+
 export default {
-  name: 'analytics'
+  name: 'analytics',
+
+  data() {
+    return {
+      loading: true,
+      comparisonData: [],
+      history: [],
+      districtStats: []
+    }
+  },
+
+  mounted() {
+    this.loadData();
+  },
+
+  methods: {
+    /**
+     * Cargar todos los datos
+     */
+    async loadData() {
+      this.loading = true;
+
+      try {
+        await Promise.all([
+          this.loadComparison(),
+          this.loadHistory(),
+          this.loadDistrictStats()
+        ]);
+      } catch (error) {
+        console.error('Error loading analytics data:', error);
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    /**
+     * Cargar comparación de algoritmos
+     */
+    async loadComparison() {
+      try {
+        const response = await http.get('/api/analytics/comparison');
+
+        if (response.data.success) {
+          // Ordenar por eficiencia y agregar ranking
+          this.comparisonData = response.data.algorithms
+              .sort((a, b) => b.eficiencia_promedio - a.eficiencia_promedio)
+              .map((algo, index) => ({
+                ...algo,
+                ranking: index + 1
+              }));
+
+          console.log('✅ Comparación de algoritmos cargada:', this.comparisonData);
+        }
+      } catch (error) {
+        console.error('Error loading comparison:', error);
+        this.$toast.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudo cargar la comparación de algoritmos',
+          life: 3000
+        });
+      }
+    },
+
+    /**
+     * Cargar historial de optimizaciones
+     */
+    async loadHistory() {
+      try {
+        const response = await http.get('/api/optimizations?limit=20');
+
+        if (response.data.success) {
+          this.history = response.data.optimizations;
+          console.log('✅ Historial cargado:', this.history.length, 'registros');
+        }
+      } catch (error) {
+        console.error('Error loading history:', error);
+      }
+    },
+
+    /**
+     * Cargar estadísticas por distrito
+     */
+    async loadDistrictStats() {
+      try {
+        const response = await http.get('/api/stats/districts');
+
+        if (response.data.success) {
+          this.districtStats = response.data.districts;
+          console.log('✅ Estadísticas por distrito cargadas:', this.districtStats);
+        }
+      } catch (error) {
+        console.error('Error loading district stats:', error);
+      }
+    },
+
+    /**
+     * Ver detalles de optimización
+     */
+    viewDetails(optimizationId) {
+      this.$router.push({
+        name: 'red-visualization',
+        params: { optimizationId }
+      });
+    },
+
+    /**
+     * Formatear fecha
+     */
+    formatDate(dateString) {
+      if (!dateString) return '-';
+      const date = new Date(dateString);
+      return date.toLocaleDateString('es-PE', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    },
+
+    /**
+     * Formatear números
+     */
+    formatNumber(num) {
+      if (!num) return '0';
+      return Number(num).toLocaleString('es-PE', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
+    }
+  }
 }
 </script>
 
 <style scoped>
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-.analytics {
+.analytics-container {
   min-height: 100vh;
   background: #F0F4F8;
+  padding: 30px;
 }
 
-/* Navbar */
-.navbar {
-  background: linear-gradient(90deg, #1E3C72 0%, #2A5298 100%);
-  color: white;
-  padding: 20px 60px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.logo {
-  font-size: 20px;
-  font-weight: bold;
-}
-
-.nav-links {
-  display: flex;
-  gap: 50px;
-  list-style: none;
-}
-
-.nav-links a {
-  color: rgba(255, 255, 255, 0.8);
-  text-decoration: none;
-  font-size: 14px;
-  transition: opacity 0.3s;
-}
-
-.nav-links a.active {
-  color: white;
-  font-weight: 600;
-}
-
-.nav-links a:hover {
-  opacity: 1;
-}
-
-/* Container */
-.container {
-  padding: 30px 60px;
-  max-width: 1440px;
-  margin: 0 auto;
-}
-
-/* Title Section */
-.title-section {
+.analytics-header {
   background: white;
   border-radius: 12px;
   padding: 30px;
@@ -248,23 +327,28 @@ export default {
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
-.title-section h1 {
+.analytics-header h1 {
   color: #1E3C72;
-  font-size: 24px;
+  font-size: 28px;
   margin-bottom: 10px;
 }
 
-.title-section p {
+.analytics-header p {
   color: #666;
-  font-size: 13px;
+  font-size: 14px;
 }
 
-/* Comparison Section */
+.analytics-content {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+/* Comparación de Algoritmos */
 .comparison-section {
   background: white;
   border-radius: 12px;
   padding: 30px;
-  margin-bottom: 30px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
@@ -274,211 +358,289 @@ export default {
   margin-bottom: 20px;
 }
 
-.table-container {
-  overflow-x: auto;
-}
-
-.comparison-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.comparison-table thead {
-  background: #F8F9FA;
-}
-
-.comparison-table th {
-  padding: 15px;
-  text-align: left;
-  font-size: 13px;
-  font-weight: 600;
-  color: #333;
-  border-bottom: 2px solid #E0E0E0;
-}
-
-.comparison-table td {
-  padding: 20px 15px;
-  border-bottom: 1px solid #E0E0E0;
-  font-size: 13px;
-  color: #666;
-}
-
-.comparison-table tbody tr:hover {
-  background: #F8F9FA;
-}
-
-.algo-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: #1E3C72;
-  margin-bottom: 4px;
-}
-
-.algo-desc {
-  font-size: 11px;
+.loading-state,
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
   color: #999;
 }
 
-.cost {
-  font-weight: 600;
-  color: #2A5298;
-  font-size: 14px;
-}
-
-code {
-  background: #F0F0F0;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-family: 'Courier New', monospace;
-  font-size: 12px;
-  color: #666;
-}
-
-.badge {
-  display: inline-block;
-  padding: 6px 12px;
-  border-radius: 12px;
-  font-size: 11px;
-  font-weight: 600;
-}
-
-.badge-success {
-  background: #D4EDDA;
-  color: #155724;
-}
-
-.badge-warning {
-  background: #FFF3CD;
-  color: #856404;
-}
-
-.badge-error {
-  background: #F8D7DA;
-  color: #721C24;
-}
-
-.note {
-  margin-top: 20px;
-  padding: 15px;
-  background: #E8F4F8;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 12px;
-  color: #1E3C72;
-}
-
-.note-icon {
-  font-size: 20px;
-}
-
-/* Charts Grid */
-.charts-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 30px;
-}
-
-.chart-card {
-  background: white;
-  border-radius: 12px;
-  padding: 25px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-.chart-card h3 {
-  color: #1E3C72;
-  font-size: 16px;
-  margin-bottom: 20px;
-}
-
-/* Bar Chart */
-.bar-chart {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-around;
-  height: 200px;
+.loading-state i {
   margin-bottom: 15px;
+  color: #2A5298;
 }
 
-.bar-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  flex: 1;
-}
-
-.bar {
-  width: 60%;
-  border-radius: 4px 4px 0 0;
-  transition: all 0.3s;
-}
-
-.bar-item:hover .bar {
-  opacity: 0.8;
-}
-
-.bar-label {
-  margin-top: 10px;
-  font-size: 10px;
-  color: #666;
-  text-align: center;
-}
-
-.chart-note {
-  font-size: 11px;
-  color: #999;
-  text-align: center;
-}
-
-/* Cost Analysis */
-.cost-analysis {
-  display: flex;
-  flex-direction: column;
+.comparison-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 20px;
 }
 
-.cost-item {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+.algo-card {
+  background: #F8F9FA;
+  border-radius: 8px;
+  padding: 20px;
+  border: 2px solid #E0E0E0;
+  transition: all 0.3s;
 }
 
-.cost-header {
+.algo-card:hover {
+  border-color: #2A5298;
+  box-shadow: 0 4px 12px rgba(42, 82, 152, 0.1);
+}
+
+.algo-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #E0E0E0;
+}
+
+.algo-header h3 {
+  color: #1E3C72;
+  font-size: 16px;
+}
+
+.algo-badge {
+  background: #E3F2FD;
+  color: #1976D2;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.algo-metrics {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.metric-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-.district-name {
+.metric-label {
+  font-size: 12px;
+  color: #666;
+}
+
+.metric-value {
   font-size: 13px;
+  font-weight: 600;
   color: #333;
 }
 
-.cost-value {
-  font-size: 13px;
+.metric-value.success {
+  color: #4CAF50;
+}
+
+.metric-value.info {
+  color: #2196F3;
+}
+
+.metric-value.warning {
+  color: #FF9800;
+}
+
+.algo-rank {
+  text-align: center;
+  margin-top: 15px;
+}
+
+.rank-badge {
+  display: inline-block;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 12px;
   font-weight: 600;
-  color: #2A5298;
 }
 
-.progress-bar {
+.rank-badge.gold {
+  background: linear-gradient(135deg, #FFD700, #FFA500);
+  color: #fff;
+}
+
+.rank-badge.silver {
+  background: linear-gradient(135deg, #C0C0C0, #808080);
+  color: #fff;
+}
+
+.rank-badge.bronze {
+  background: linear-gradient(135deg, #CD7F32, #8B4513);
+  color: #fff;
+}
+
+/* Historial */
+.history-section {
+  background: white;
+  border-radius: 12px;
+  padding: 30px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.section-header h2 {
+  color: #1E3C72;
+  font-size: 20px;
+}
+
+.btn-refresh {
+  padding: 8px 16px;
+  background: #2A5298;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.btn-refresh:hover {
+  background: #1E3C72;
+}
+
+.history-table {
+  overflow-x: auto;
+}
+
+table {
   width: 100%;
-  height: 16px;
-  background: #E0E0E0;
-  border-radius: 8px;
-  overflow: hidden;
+  border-collapse: collapse;
 }
 
-.progress {
-  height: 100%;
-  border-radius: 8px;
-  transition: width 0.5s ease;
+thead {
+  background: #F8F9FA;
 }
 
-@media (max-width: 1024px) {
-  .charts-grid {
+th {
+  padding: 12px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+  border-bottom: 2px solid #E0E0E0;
+}
+
+.history-row {
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.history-row:hover {
+  background: #F8F9FA;
+}
+
+td {
+  padding: 12px;
+  font-size: 12px;
+  color: #333;
+  border-bottom: 1px solid #E0E0E0;
+}
+
+.algo-tag {
+  display: inline-block;
+  background: #E3F2FD;
+  color: #1976D2;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.cost-cell {
+  font-weight: 600;
+  color: #4CAF50;
+}
+
+.efficiency-badge {
+  display: inline-block;
+  background: #D4EDDA;
+  color: #155724;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* Distritos */
+.districts-section {
+  background: white;
+  border-radius: 12px;
+  padding: 30px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.districts-section h2 {
+  color: #1E3C72;
+  font-size: 20px;
+  margin-bottom: 20px;
+}
+
+.districts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+.district-card {
+  background: linear-gradient(135deg, #667EEA 0%, #764BA2 100%);
+  border-radius: 8px;
+  padding: 20px;
+  color: white;
+}
+
+.district-card h3 {
+  font-size: 18px;
+  margin-bottom: 15px;
+}
+
+.district-metrics {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.district-metric {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.district-metric .label {
+  font-size: 12px;
+  opacity: 0.9;
+}
+
+.district-metric .value {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+@media (max-width: 768px) {
+  .comparison-grid,
+  .districts-grid {
     grid-template-columns: 1fr;
+  }
+
+  .history-table {
+    font-size: 11px;
+  }
+
+  th, td {
+    padding: 8px;
   }
 }
 </style>
